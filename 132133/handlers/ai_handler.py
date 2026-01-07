@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 
 logger = logging.getLogger(__name__)
 
-# Mistral API конфиг
+# mistral API конфиг
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY") or "r7JuVl8YKk8pfNPjCxnWzaPw6uNxYmdy"
 MISTRAL_MODEL = os.getenv("MISTRAL_MODEL", "mistral-large-latest")
 MISTRAL_ENDPOINT = os.getenv(
@@ -39,7 +39,7 @@ async def start_ai_report(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             "🤖 Выбран AI-помощник. Опишите задачу — кратко или подробно, а я постараюсь помочь."
         )
 
-    # Mark the conversation state so file_handler or other handlers know we're in AI mode
+    # mark the conversation state so file_handler or other handlers know we're in AI mode
     context.user_data["report_type"] = "ai"
 
 async def process_ai_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> str:
@@ -58,12 +58,12 @@ async def process_ai_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         elif getattr(reply_to, 'caption', None):
             replied_text = reply_to.caption
 
-        # Try to parse 'homework_check' style report from replied_text
+        # try to parse 'homework_check' style report from replied_text
         problems = []
         if replied_text:
             import re
 
-            # Pattern to match lines like:
+            # pattern to match lines like:
             # • Name: Получено 10 | Проверено 7 | 70.0%
             pattern = re.compile(
                 r"^[\u2022\-\*\•]?\s*(?P<name>[^:\n]+):\s*[Пп]олучено\s*(?P<issued>[0-9]+)\s*\|\s*[Пп]роверено\s*(?P<checked>[0-9]+)\s*\|\s*(?P<pct>[0-9.,]+)%",
@@ -80,7 +80,7 @@ async def process_ai_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 except Exception:
                     continue
 
-        # If we parsed problems from text, answer locally
+        # If parsed problems from text, answer locally
         if problems:
             q = user_text.lower()
             # who checked the least
@@ -327,4 +327,5 @@ def _call_mistral(prompt: str) -> str:
             return choice["message"].get("content", "")
 
     # Fallback
+
     return j.get("message") if isinstance(j, dict) and "message" in j else ""
