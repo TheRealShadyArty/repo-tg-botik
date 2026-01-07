@@ -34,7 +34,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Состояния разговора (строковые — удобно и читаемо)
+# Состояния разговора 
 SCHEDULE = "schedule"
 LESSONS = "lessons"
 STUDENTS = "students"
@@ -43,7 +43,7 @@ HOMEWORK_CHECK = "homework_check"
 HOMEWORK_SUBMIT = "homework_submit"
 AI = "ai"
 
-# Главное меню — используем функцию, чтобы не дублировать код
+# Главное меню 
 def get_main_keyboard():
     return InlineKeyboardMarkup(
         [
@@ -73,14 +73,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     if update.message:
         await update.message.reply_text(text, reply_markup=reply_markup)
-        # Secondary message to show the persistent /start button near the input bar
+        # /start button near the input bar
         await update.message.reply_text(
             "Нажмите кнопку /start для быстрого открытия меню.",
             reply_markup=get_start_reply_keyboard(),
         )
     else:  # от callback
         await update.callback_query.edit_message_text(text, reply_markup=reply_markup)
-        # Send a small message with the reply keyboard so the client shows the button
+        # send a small message with the reply keyboard so the client shows the button
         if update.callback_query.message:
             await update.callback_query.message.reply_text(
                 "Нажмите кнопку /start для быстрого открытия меню.",
@@ -124,23 +124,23 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     choice = query.data
 
-    # Справка
+    # cправка
     if choice == "help":
         await help_command(update, context)
         return ConversationHandler.END
 
-    # Перезапуск меню
+    # перезапуск 
     if choice == "restart":
         await start(update, context)
         return ConversationHandler.END
 
-    # Выбор периода для отчета по проверке ДЗ
+    # выбор периода по проверке ДЗ
     if choice in ("hw_check_month", "hw_check_week"):
         context.user_data["report_type"] = HOMEWORK_CHECK
         await homework_check_handler.handle_hw_check_period(update, context)
         return HOMEWORK_CHECK
 
-    # Сопоставление кнопки с функцией запуска отчёта
+    # сопоставление кнопки с функцией запуска отчёта
     start_handlers = {
         SCHEDULE: schedule_handler.start_schedule_report,
         LESSONS: lessons_handler.start_lessons_report,
@@ -154,7 +154,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     handler_func = start_handlers.get(choice)
     if handler_func:
         context.user_data["report_type"] = choice
-        # Убрана общая подсказка — каждый обработчик сам присылает сообщение с инструкцией
+        
         await handler_func(update, context)
         return choice
 
@@ -184,15 +184,15 @@ async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
             return report_type
 
         file_obj = await document.get_file()
-        # Используем NamedTemporaryFile для безопасного управления временным файлом
+        # используем NamedTemporaryFile для безопасного управления временным файлом
         tmp = tempfile.NamedTemporaryFile(prefix="bot_", suffix=".xlsx", delete=False)
         tmp_path = tmp.name
         tmp.close()
         await file_obj.download_to_drive(tmp_path)
-        # Помечаем как обработанный (чтобы избежать повторной обработки при дублированных апдейтах)
+        # помечаем как обработанный (чтобы избежать повторной обработки при дублированных апдейтах)
         context.user_data[processed_key] = True
 
-        # Выбор нужного процессора
+        # выбор процесса
         processors = {
             SCHEDULE: schedule_handler.process_schedule_file,
             LESSONS: lessons_handler.process_lessons_file,
@@ -206,7 +206,7 @@ async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
         if processor:
             await processor(update, context, tmp_path)
 
-        # Возврат в главное меню
+        # возврат в главное меню
         await update.message.reply_text("✅ Готово! Выберите следующий отчёт:", reply_markup=get_main_keyboard())
         context.user_data.clear()
         return ConversationHandler.END
@@ -217,7 +217,7 @@ async def file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> st
         return ConversationHandler.END
 
     finally:
-        # Гарантированное удаление временного файла, если он был создан
+        # удаление временного файла, если он был создан
         if tmp_path and os.path.exists(tmp_path):
             try:
                 os.remove(tmp_path)
@@ -234,19 +234,19 @@ def main():
     # Загружаем переменные окружения из .env файла
     load_dotenv()
     
-    # Получение токена
+    # токен
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
         logger.error("TELEGRAM_BOT_TOKEN environment variable is not set")
         sys.exit(1)
 
-    # Создание приложения
+    # создание приложения
     application = Application.builder().token(token).build()
 
-    # Store reusable objects in bot_data for handlers (e.g., main keyboard)
+    # store reusable objects in bot_data for handlers (e.g., main keyboard)
     application.bot_data["main_keyboard"] = get_main_keyboard()
 
-    # Главный ConversationHandler
+    # ConversationHandler
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start), CallbackQueryHandler(button_handler)],
         states={
@@ -294,4 +294,5 @@ def main():
         application.run_polling()
 
 if __name__ == "__main__":
+
     main()
